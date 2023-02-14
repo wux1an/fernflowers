@@ -14,9 +14,9 @@ public class Cache {
     private       Set<String> decompiled = new HashSet<>();
     private final Set<String> remain     = new HashSet<>();
 
-    public Cache(String path, List<Path> files) throws IOException {
+    public Cache(String path, List<Path> files, boolean resume) throws IOException {
         this.file = new File(path);
-        if (this.file.exists()) {
+        if (resume && this.file.exists()) {
             decompiled.addAll(Files.readAllLines(Path.of(path)));
             System.out.println("[+] load cache, automatically ignore " + decompiled.size() + " files");
         }

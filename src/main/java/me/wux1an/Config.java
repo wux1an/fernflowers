@@ -5,5 +5,6 @@ public class Config {
     public String  output;
     public boolean unzip;
     public int     thread;
-    public int     timeout;
+    public boolean resume;
+    public boolean backup;
 }

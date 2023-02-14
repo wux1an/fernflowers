@@ -11,18 +11,74 @@ import java.util.HashMap;
 public class DecompileJob implements Runnable {
     private final File        src;
     private final Config      config;
-    private final ProgressBar bar;
-    private final Cache       cache;
+    private       ProgressBar bar;
+    private       Cache       cache;
 
-    public DecompileJob(File src, ProgressBar bar, Config config, Cache cache) {
-        this.src    = src;
+    /**
+     * decompile a directory
+     */
+    public DecompileJob(File dir, ProgressBar bar, Config config, Cache cache) {
+        this.src    = dir;
         this.bar    = bar;
         this.cache  = cache;
         this.config = config;
     }
 
+    public DecompileJob(File file, Config config) {
+        this.src    = file;
+        this.config = config;
+    }
+
+    public void decompileOne() {
+        String inputRoot   = Path.of(this.config.input).toAbsolutePath().getParent().toString();
+        String srcPath     = src.toPath().toAbsolutePath().toString();
+        String outputRoot  = Path.of(this.config.output).toAbsolutePath().toString();
+        Path   newFilePath = Path.of(srcPath.replace(inputRoot, outputRoot));
+
+        ConsoleDecompiler decompiler = new ConsoleDecompiler(
+                newFilePath.getParent().toFile(),
+                new HashMap<>(),
+                new QuiteLogger()
+        );
+        decompiler.addSource(src);
+        try {
+            decompiler.engine.decompileContext();
+        } catch (Exception e) {
+            System.out.println("[x] failed to decompile file '" + src.getAbsolutePath().toString() + "'");
+        } finally {
+            decompiler.engine.decompileContext();
+        }
+
+        if (newFilePath.toString().endsWith(".jar") && config.unzip) {
+            unzip(newFilePath.toAbsolutePath().toString());
+        }
+
+        System.out.println("[+] decompiled to '" + newFilePath + "'");
+    }
+
+    private void unzip(String path) {
+        File unpack = new File(path + ".unpack");
+        File zip    = new File(path);
+        ZipUtil.unpack(zip, unpack);
+        if (this.config.backup) {
+            return;
+        }
+
+        if (!new File(path).delete()) {
+            System.out.println("[x] failed to delete temp jar file at '" + zip.toPath() + "'");
+        } else if (!unpack.renameTo(zip)) {
+            System.out.println("[x] failed to rename unpacked jar directory from '" +
+                    unpack.toPath() +
+                    "' to '" +
+                    zip.toPath() +
+                    "'"
+            );
+        }
+    }
+
     @Override
     public void run() {
+        boolean decompileSuccess = false;
         try {
             if (this.cache.hasDecompiled(src.toPath())) return;
 
@@ -38,31 +94,27 @@ public class DecompileJob implements Runnable {
                     new QuiteLogger()
             );
             decompiler.addSource(src);
-            decompiler.decompileContext();
+            try {
+                decompiler.engine.decompileContext();
+                decompileSuccess = true;
+            } catch (Exception e) {
+                System.out.println("[x] failed to decompile file '" + src.getAbsolutePath().toString() + "'");
+            } finally {
+                decompiler.engine.decompileContext();
+            }
 
             // 2. unzip
             if (newFilePath.endsWith(".jar") && config.unzip) {
-                File unpack = new File(newFilePath + ".unpack");
-                File zip    = new File(newFilePath);
-                ZipUtil.unpack(zip, unpack);
-                if (!new File(newFilePath).delete()) {
-                    System.out.println("[x] failed to delete temp jar file at '" + zip.toPath() + "'");
-
-                } else {
-                    if (!unpack.renameTo(zip)) {
-                        System.out.println("[x] failed to rename unpacked jar directory from '" +
-                                unpack.toPath() +
-                                "' to '" +
-                                zip.toPath() +
-                                "'"
-                        );
-                    }
-                }
+                unzip(newFilePath);
             }
 
-            cache.markDecompiled(src.toPath());
+            if (decompileSuccess) {
+                cache.markDecompiled(src.toPath());
+            }
         } finally {
-            bar.step();
+            if (decompileSuccess) {
+                bar.step();
+            }
         }
     }
 }

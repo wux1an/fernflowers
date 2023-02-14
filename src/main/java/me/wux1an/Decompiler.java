@@ -3,6 +3,7 @@ package me.wux1an;
 import me.tongfei.progressbar.ProgressBar;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -27,14 +28,25 @@ public class Decompiler {
             }
         }
 
-        System.out.println("[+] scanning files in " + this.config.input + "...");
-        PathScan pathScan = new PathScan(this.config.input);
-        pathScan.scan();
 
+        File input = new File(this.config.input);
+        if (input.exists() && input.isFile()) {
+            new DecompileJob(input, config).decompileOne();
+            System.exit(0);
+        }
+
+        PathScan pathScan = new PathScan(this.config.input);
+        System.out.println("[+] scanning files in " + this.config.input + "...");
+        try {
+            pathScan.scan();
+        } catch (FileNotFoundException ignored) {
+            System.out.println("[x] path '" + this.config.input + "' is not exist");
+            System.exit(0);
+        }
 
         Cache cache;
         try {
-            cache = new Cache("decompiled.txt", pathScan.getFiles());
+            cache = new Cache("decompiled.txt", pathScan.getFiles(), config.resume);
         } catch (IOException e) {
             System.out.println("[x] failed to load cache, " + e.getMessage());
             return;

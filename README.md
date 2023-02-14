@@ -17,11 +17,13 @@ So I developed this program based on fernflower to optimize these problems, with
 
 ```
 usage: java -jar fernflowers.jar [args]
- -h              help
- -i <arg>        input, the directory to be scanned.
- -o <arg>        output, the directory to saved result.
- -thread <arg>   thread, default: 20
- -unzip          unzip the jar file
+ -h,--help           help
+ -i,--input <arg>    input, the directory to be scanned or a single file path.
+ -k,--backup         don't delete the jar file in the output path when '--unzip' is specified
+ -n,--thread <arg>   thread, default: 20
+ -o,--output <arg>   output, the directory to saved result, default: current path.
+ -r,--resume         skip the decompiled files (record in 'decompiled.txt') and continue
+ -u,--unzip          unzip the jar file
 ```
 
 After running for a period of time, almost all files are decomcompiled successfully, and the progress bar remains stuck, indicating that some jar packages have been decomcompiled incorrectly. You only need to terminate the program by `Ctrl + C`, and the program will automatically print out the wrong jar package path.

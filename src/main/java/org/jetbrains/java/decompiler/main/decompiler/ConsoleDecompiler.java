@@ -98,7 +98,7 @@ public class ConsoleDecompiler implements IBytecodeProvider, IResultSaver {
   // *******************************************************************
 
   private final File root;
-  private final Fernflower engine;
+  public  final Fernflower engine;
   private final Map<String, ZipOutputStream> mapArchiveStreams = new HashMap<>();
   private final Map<String, Set<String>> mapArchiveEntries = new HashMap<>();
 
